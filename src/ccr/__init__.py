@@ -1,6 +1,7 @@
 """Counterparty credit risk exposures under the Hull-White extended Vasicek model."""
 
 from .curve import DiscountCurve, bootstrap
+from .curve_source import CurveSource, load_curve, market_data_available
 from .cva import CreditParameters, compute_cva, cva_sensitivities
 from .engine import (
     SCENARIOS,
@@ -25,10 +26,14 @@ from .hull_white import (
 )
 from .market_data import MarketData, load_market_data
 from .swap import InterestRateSwap, SwapType, basis_point_value, par_swap_rate
+from .synthetic_curve import SVENSSON_FEB_2008, SvenssonParameters, synthetic_curve
 
 __all__ = [
     "DiscountCurve",
     "bootstrap",
+    "CurveSource",
+    "load_curve",
+    "market_data_available",
     "CreditParameters",
     "compute_cva",
     "cva_sensitivities",
@@ -53,4 +58,7 @@ __all__ = [
     "SwapType",
     "basis_point_value",
     "par_swap_rate",
+    "SVENSSON_FEB_2008",
+    "SvenssonParameters",
+    "synthetic_curve",
 ]

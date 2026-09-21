@@ -52,7 +52,7 @@ under the bumped input, with common random numbers across runs:
 |---|---|---:|
 | Interest rates, parallel | +1 bp | +1 804 |
 | Counterparty hazard rate | +1 bp | +1 119 |
-| Hull-White volatility | +1 bp | +2 721 |
+| Hull-White volatility | +1 bp | +2 720 |
 
 All three are positive: the position is a payer swap (CVA is directional), the
 credit leg enters linearly, and the exposure is an option-like payoff, so CVA is
@@ -86,17 +86,19 @@ worth `1 - B(s, T_N)` with no accrual term.
 
 ```
 src/ccr/
-    dates.py         day-count conventions, schedules
-    market_data.py   CSV loading and quote normalisation
-    curve.py         discount curve, bootstrap (depos / futures / swaps)
-    swap.py          schedules, BPV, par rate, MtM (spot and path-wise)
-    hull_white.py    OU simulation, affine coefficients
-    exposure.py      EPE / ENE / PFE / Peak-PFE, CSA collateral mechanics
-    engine.py        Monte Carlo loop over the simulation grid
-    cva.py           CVA and its sensitivities
+    dates.py            day-count conventions, schedules
+    market_data.py      CSV loading and quote normalisation
+    curve.py            discount curve, bootstrap (depos / futures / swaps)
+    synthetic_curve.py  offline Svensson fallback curve
+    curve_source.py     picks market data or fallback automatically
+    swap.py             schedules, BPV, par rate, MtM (spot and path-wise)
+    hull_white.py       OU simulation, affine coefficients
+    exposure.py         EPE / ENE / PFE / Peak-PFE, CSA collateral mechanics
+    engine.py           Monte Carlo loop over the simulation grid
+    cva.py              CVA and its sensitivities
 notebooks/
     ccr_exposures.ipynb   the analysis, start to finish
-tests/                    47 tests, no market data required for most
+tests/                    55 tests, 49 of which run without market data
 figures/                  output of the notebook
 ```
 
@@ -104,13 +106,32 @@ figures/                  output of the notebook
 
 ```bash
 pip install -r requirements.txt
-pytest                                     # 47 tests
+pytest                                     # 55 tests
 jupyter lab notebooks/ccr_exposures.ipynb  # full analysis, ~30 s at 250k scenarios
 ```
 
-The market data is **not redistributed** with this repository. See
-[`data/README.md`](data/README.md) for the five files expected and their format;
-tests that need them skip automatically when they are absent.
+**It runs straight after cloning.** The market quotes are not redistributed
+with this repository, so when `data/` holds no CSV files the discount curve
+falls back automatically on a Svensson parametrisation fitted to the original
+bootstrapped curve (`src/ccr/synthetic_curve.py`, six parameters). Every cell
+of the notebook still runs, and the results stay close to the published ones:
+
+| | Market data | Fallback | Difference |
+|---|---:|---:|---:|
+| 10y par rate | 4.4340% | 4.4358% | +0.2 bp |
+| Peak-PFE, base | 16.39 m | 16.48 m | +0.6% |
+| CVA, base | 244 139 | 246 731 | +1.1% |
+| CVA, netted | 159 661 | 163 062 | +2.1% |
+| CVA, CSA | 21 344 | 21 455 | +0.5% |
+
+The fit is within 2.5 bp of the bootstrapped curve from two years onwards. It
+cannot follow the money-market structure of February 2008 below two years — a
+hump around six months, then a dip priced by the futures strip — and misses it
+by up to about 20 bp there; that is where the small differences come from.
+
+To reproduce the published figures exactly, drop the five CSV files described
+in [`data/README.md`](data/README.md) into `data/`: the bootstrap then takes
+over automatically. Tests that need the files skip when they are absent.
 
 ## Provenance and corrections
 

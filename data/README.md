@@ -2,9 +2,14 @@
 
 The EUR market data set used by the notebook (Euribor deposits, futures and swap
 quotes as of 15 February 2008) is course material and is **not redistributed
-here**. Tests that depend on it skip automatically when the files are absent.
+here**.
 
-Drop the following five CSV files in this directory to reproduce the analysis.
+The project does not need it to run: without these files the curve falls back
+on an offline Svensson curve fitted to the same data (see the main README for
+its accuracy), and tests that depend on the raw quotes skip automatically.
+
+To reproduce the published figures exactly, drop the following five CSV files
+in this directory; the bootstrap is then used automatically.
 Dates are formatted `%d-%b-%y` (e.g. `19-Feb-08`); bid and ask are quoted in
 percent for rates and in price for futures.
 

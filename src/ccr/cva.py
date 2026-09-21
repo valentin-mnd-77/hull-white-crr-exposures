@@ -15,16 +15,16 @@ counterparty is close to default.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 
-from .curve import DiscountCurve, bootstrap
+from .curve import DiscountCurve
 from .dates import ACT_365, DateLike, year_fraction_act
 from .engine import SimulationConfig, run_simulation
 from .exposure import CSAParameters
 from .hull_white import HullWhiteParameters
-from .market_data import MarketData
 from .swap import InterestRateSwap
 
 
@@ -65,7 +65,7 @@ def compute_cva(
 
 
 def cva_sensitivities(
-    market: MarketData,
+    curve_builder: Callable[[float], DiscountCurve],
     curve: DiscountCurve,
     swap: InterestRateSwap,
     swap_netting: InterestRateSwap,
@@ -90,6 +90,13 @@ def cva_sensitivities(
     All runs reuse the same seed, so the reported differences are free of
     Monte Carlo noise to first order (common random numbers).
 
+    Parameters
+    ----------
+    curve_builder
+        Rebuilds the discount curve under a parallel rate shock, e.g.
+        ``CurveSource.build``: a re-bootstrap with shocked market rates, or a
+        shifted fallback curve.  The swaps keep their traded fixed rates.
+
     Returns
     -------
     pd.DataFrame
@@ -102,10 +109,8 @@ def cva_sensitivities(
 
     rows = [("base", np.nan, base_cva, 0.0)]
 
-    # --- interest rates: re-bootstrap, re-simulate, keep the traded fixed rate
-    bumped_curve = bootstrap(
-        curve.reference_date, market.depos, market.futures, market.swaps, shock=rate_bump
-    )
+    # --- interest rates: rebuild the curve, re-simulate, keep the traded fixed rate
+    bumped_curve = curve_builder(rate_bump)
     ir_results = run_simulation(
         bumped_curve,
         swap.settlement_date,
