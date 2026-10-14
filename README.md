@@ -133,62 +133,6 @@ To reproduce the published figures exactly, drop the five CSV files described
 in [`data/README.md`](data/README.md) into `data/`: the bootstrap then takes
 over automatically. Tests that need the files skip when they are absent.
 
-## Provenance and corrections
-
-This project started as a graduate assignment (Risk Management, Financial
-Engineering MSc, Politecnico di Milano) built on skeleton code containing gaps
-to fill and deliberate errors to find. The repository is a full rewrite —
-package structure, tests, reproducible seeding — and the substantive corrections
-made along the way are listed below, since finding them was most of the work.
-
-**Errors that changed the results**
-
-1. **Sign of the convexity term in the affine coefficients.** `A(s, tau)` was
-   computed with `exp(+I/2)` instead of `exp(-I/2)`, placing simulated discount
-   factors *above* the forward curve. The 10y discount factor seen from 5y was
-   overstated by 148 bp, biasing the entire exposure profile.
-2. **Fixed leg built without accrual factors.** Cash flows were set to `K`
-   rather than `K * delta_i`. Invisible on an annual leg (`delta ≈ 1`), it
-   inflates a quarterly leg roughly fourfold: the 5y swap of the netting
-   scenario was worth −81m at inception instead of zero, making both netting
-   scenarios meaningless.
-3. **CSA parameters contradicting the term sheet.** A 2m threshold on the bank
-   with an uncapped exposure meant the bank posted collateral, and a 15m cap on
-   the counterparty meant it did not cover its exposure in full — the opposite of
-   what the case study specifies on both sides.
-4. **Rate shock applied to futures prices.** In the bumped bootstrap the shift
-   was added to the quoted price rather than to the implied rate
-   `(100 - price)/100`, turning a +1 bp rate shift into a −100 bp shift on the
-   futures strip, and with it the whole IR01.
-5. **Exposure of the second trade standalone was never computed**, although the
-   netting question asks explicitly for the comparison of the netted portfolio
-   against the individual trades.
-6. **Rate sensitivity computed on a frozen exposure profile**, re-discounting
-   the same EPE under a bumped curve. The dominant effect of a rate shift runs
-   through the mark-to-market of the swap, hence through the exposure itself;
-   both sensitivities are now full revaluations.
-7. **Inconsistent time measures**, ACT/360 in the simulation of the state
-   variable against ACT/365 in the pricing functions, biasing its variance by
-   1.4%. A single model basis is now defined in one place.
-
-**Latent defects**
-
-8. Zero-rate interpolation anchored on a spurious `z(0) = 0` node, distorting
-   discount factors before the first pillar instead of extrapolating flat.
-9. Conventions mixed inside the curve module itself: zero rates returned in
-   ACT/360 while the interpolator rebuilt them in ACT/365.
-10. No random seed, so no result could be reproduced; the number of futures used
-    in the bootstrap hard-coded rather than derived from the 2y pillar; margin
-    calls triggered by a `>= 360 days` heuristic instead of an explicit
-    schedule; a local variable shadowing the `datetime` module inside the
-    simulation routine.
-
-**Deliberately left as-is, and documented**
-
-The 1y point of the curve comes from the futures strip, not from the 1y swap
-quote, and therefore misses it by about 12 bp — that is the futures/swap basis of
-February 2008 and a property of the pillar selection, not an error. A test pins
-the value so that an accidental change of construction is caught.
 
 ## References
 
